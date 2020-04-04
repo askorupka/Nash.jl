@@ -75,7 +75,7 @@ end
 * `s` - vector of actions probabilities
 """
 function get_payoff(game::Dict{String,<:Array}, s::Vector{Vector{T}}) where T<:Real
-    if !all(sum.(s).==1)
+    if !all(@. round(sum(s),digits = 2) ==1)
         error("Provided vectors are not probabilities distribution")
     end
     return Dict(k=>sum(v.*outer(s)) for (k,v) in game)
@@ -125,11 +125,10 @@ end
 a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0.4, 0.6], [1, 0]], 1, 1, return_val="chull")
 a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1], [2 0; 0 1]), [[0, 1], [1, 0]], 2, 1/5)
 a3 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull")
-a4 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 2)
 
 """
-`is_nash_q` return logical vector indicating whether given profile is
-Nash equilibrium.
+`is_nash_q` return a dictionary of logical vectors indicating whether
+given profile is Nash equilibrium.
 
 **Input parameters**
 * `game` - dictionary of players and their payoff matrices
@@ -150,14 +149,12 @@ function is_nash_q(game::Dict{String,<:Array}, s::Vector{Vector{T}}) where T<:Re
 end
 
 is_nash_q(generate_game([1 0 ; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]])
-is_nash_q(generate_game([1 0 ; 0 1], [1 0; 0 1]), [[0, 1], [0, 1]])
-is_nash_q(generate_game([1 0 ; 0 1], [1 0; 0 1]), [[1, 0], [9/10, 1/10]])
 
 """
-`plot_br` plots best reply in the form of simplex (3d and above)
+`plot_br` plot best reply in the form of simplex (3d and above)
 
 **Input parameters**
-* `br` - best reply function (with return_val="chull") output
+* `br` - best_reply function (with return_val="chull") output
 """
 function plot_br(br::CDDLib.Polyhedron{T}) where T<:Real
     br_mesh=Polyhedra.Mesh(br)
@@ -168,6 +165,62 @@ end
 #TODO make stable for 1d, 2d https://github.com/rdeits/MeshCat.jl/blob/master/notebooks/demo.ipynb
 
 plot_br(a3)
+
+"""
+`_select_random` internal function for best reply iteration
+return a random point on the given best reply simplex
+
+**Input parameters**
+* `game` - dictionary of players and their payoff matrices
+* `s` - vector of actions probabilities
+* `br` - array of best reply
+"""
+function _select_random(game::Dict{String,<:Array}, s::Vector{Vector{T}},
+    br::Array{Array{Bool}}) where T<:Real
+    s_iter = [] #TODO: not Any type
+    for i in 1:length(game)
+            s_iter_temp = fill(0.0, size(s[i]))' #size: number of actions
+            findzero = mapslices(sum, convert(Array{Int,2},br[i]), dims = 1)
+            s_iter_temp[findzero .!= 0] = rand(sum(findzero))  #where best reply is non-zero
+            s_iter_temp = s_iter_temp ./ sum(s_iter_temp)
+            s_iter_temp = reshape(s_iter_temp, size(s[i]))
+            push!(s_iter, s_iter_temp)
+    end
+    s_iter = convert(typeof(s), s_iter)
+    return s_iter
+end
+
+"""
+`iterate_best_reply` return an array of arrays representing each players'
+game strategies (action probabilities) history in every iteration
+
+**Input parameters**
+* `game` - dictionary of players and their payoff matrices
+* `s` - vector of actions probabilities
+* `it_num` - an integer specifying how many iterations should be repeated
+"""
+function iterate_best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}},
+    it_num::Int=10)  where T<:Real
+    s_temp = deepcopy(s)
+    s_history = [] #TODO not Any type
+    push!(s_history, s_temp)
+    for i in 1:it_num
+        br = Array{Bool}[]
+        for i in 1:length(game)
+            push!(br, best_reply(game, s_temp, i))
+        end
+        s_temp = _random_select(game, s_temp, br)
+        push!(s_history, s_temp)
+    end
+    println("After ", it_num, " iterations")
+    all(values(is_nash_q(game, s_history[length(s_history)]))) ?
+        println("Nash equilibrium found") : println("Nash equilibrium not found")
+    return s_history
+end
+
+game = generate_game(Matrix(I, 3, 3), Matrix(I, 3, 3))
+s = [[1/2,1/2, 0], [1/3,1/3,1/3]]
+game_history = iterate_best_reply(game, s, 7)
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie
