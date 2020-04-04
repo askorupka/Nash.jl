@@ -98,7 +98,7 @@ get_payoff(game,s)
 * `return_val` - type of returned value ("array" or "chull")
 """
 function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:Real}},
-    k::Int, eps::T where T<:Real ;return_val::String="array")
+    k::Int, eps::T=0.0 ;return_val::String="array") where T<:Real
     (eps < 0 || eps > 1) && throw(ArgumentError("Probability of error (eps) should be in range 0-1"))
     # nie wiem czemu zwracanie tego errora nie konczy wykonywania funkcji
     # w generate_game analogiczny syntax dziala poprawnie
@@ -122,9 +122,9 @@ function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:Real}},
     end
 end
 
-a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0.4, 0.6], [1, 0]], 1, 1, return_val="chull")
-a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1], [2 0; 0 1]), [[0, 1], [1, 0]], 2, 1/5)
-a3 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull")
+a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0.4, 0.6], [1, 0]], 1) #no perturbation
+a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0, 1], [1, 0]], 2, 1/5) #perturbation eps = 1/5
+a3 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull") # no perturbation
 
 """
 `is_nash_q` return a dictionary of logical vectors indicating whether
