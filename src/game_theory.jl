@@ -97,8 +97,8 @@ get_payoff(game,s)
 * `eps` - probability of error (if the answer is disturbed)
 * `return_val` - type of returned value ("array" or "chull")
 """
-function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:Real}},
-    k::Int, eps::T=0.0 ;return_val::String="array") where T<:Real
+function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:T}} where T<:Real,
+    k::Int, eps::F=0.0;return_val::String="array") where F<:Real
     (eps < 0 || eps > 1) && throw(ArgumentError("Probability of error (eps) should be in range 0-1"))
     # nie wiem czemu zwracanie tego errora nie konczy wykonywania funkcji
     # w generate_game analogiczny syntax dziala poprawnie
