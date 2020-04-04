@@ -1,6 +1,7 @@
 using Test
 using Nash
 using Distributions
+using CDDLib
 
 @testset "games" begin
 
@@ -30,7 +31,8 @@ bp1ch = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]], 1, r
 bp2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]], 2)
 @test bp1 == bp2
 @test bp1 == [1 0]
-@test typeof(bp2) == Array{Bool,2}
+@test bp2 isa Array{<:Real,2}
+@test bp1ch isa CDDLib.Polyhedron{<:Real}
 
 nashq = is_nash_q(generate_game([1 0 ; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]])
 @test typeof(nashq) == Dict{String,Bool}

@@ -1,19 +1,9 @@
-# Wykorzystamy pakiet distributions, by moc losowac z podstawowych
-# rozkladow prawdopodobienstwa
-
 using Distributions
 using LinearAlgebra
 using CDDLib
 using Polyhedra
 using MeshCat
 
-# nawiasy kwadratowe przy wprowadzaniu danych - array, tuple - okragle
-# poniewaz nie jest to az tak intuicyjne pisze to tak, by w obu przypadkach
-# julia cos wyplula (jeśli tylko to, co zada uzytkownik ma sens)
-
-# generowanie losowej gry, okreslone przez losowy rozklad i liczbe akcji
-# konwersja tuple w array i ponownie array w tuple, gdyz reshape nie ma
-# metody dla array
 
 """
 `generate_game` return given payoff matrices for given number
@@ -25,9 +15,11 @@ of players with given number of actions
 function generate_game(payoffm...)
     !all(@. collect(payoffm) isa Array{<: Real}) && return @error "All arguments have to be arrays"
     !all(y->y==size.(payoffm)[1], size.(payoffm)) && return @error "All arrays should have same dimension"
+    !all(size.(payoffm) .|> length .== length(payoffm)) && return @error "Dimensions of payoff matrices should equal to number of players (input arguments)"
     Dict("player"*string(i)=>collect(payoffm)[i] for i in 1:length(payoffm))
-    #note: collect is costly; maybe any other ideas?
 end
+
+g = generate_game([1 0; 0 1], [1 0; 0 1])
 
 """
 `random_2players_game` return random payoff matrices for 2 players with given number of actions
@@ -102,10 +94,15 @@ get_payoff(game,s)
 * `game` - dictionary of players and their payoff matrices
 * `s` - vector of actions probabilities
 * `k` - number of player for which the best reply is returned
+* `eps` - probability of error (if the answer is disturbed)
 * `return_val` - type of returned value ("array" or "chull")
 """
-function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}}, k::Int,
-    ;return_val::String="array") where T<:Real
+function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:Real}},
+    k::Int, eps::T where T<:Real ;return_val::String="array")
+    (eps < 0 || eps > 1) && throw(ArgumentError("Probability of error (eps) should be in range 0-1"))
+    # nie wiem czemu zwracanie tego errora nie konczy wykonywania funkcji
+    # w generate_game analogiczny syntax dziala poprawnie
+    action_no = size(game["player1"])[k]
     s_temp=deepcopy(s)
     payoffs=[] #Vector{<:Real} albo z where nie dziala - no idea why
     # musi byc any lecz nie jest to optymalne gdyz taki vector wolniej sie przeszukuje
@@ -114,21 +111,21 @@ function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}}, k::Int,
         s_temp[k][i] = 1
         push!(payoffs, get_payoff(game, s_temp)["player"*string(k)])
     end
-    pos = (payoffs .== maximum(payoffs))
-    eyemat = Matrix(I, size(game["player1"])[k], size(game["player1"])[k])
+    eyemat = Matrix(I, action_no, action_no)
+    (eps != 0 && rand() < eps) ? pos = rand([false true], action_no) : pos = (payoffs .== maximum(payoffs))
+    all(pos .== 0) ? pos[rand(1:action_no)] = 1 : nothing
     val2ret = eyemat[pos, :]
     if return_val == "chull"
         polyh = polyhedron(vrep(val2ret), CDDLib.Library())
         return convexhull(polyh,polyh)
     else return val2ret
     end
-
 end
 
-a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]], 1, return_val="chull")
-a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1], [2 0; 0 1]), [[1, 0], [1, 0]], 2)
+a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0.4, 0.6], [1, 0]], 1, 1, return_val="chull")
+a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1], [2 0; 0 1]), [[0, 1], [1, 0]], 2, 1/5)
 a3 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull")
-a4 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 2, return_val = "chull")
+a4 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 2)
 
 """
 `is_nash_q` return logical vector indicating whether given profile is
@@ -174,6 +171,18 @@ plot_br(a3)
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie
+
+# Wykorzystamy pakiet distributions, by moc losowac z podstawowych
+# rozkladow prawdopodobienstwa
+
+# nawiasy kwadratowe przy wprowadzaniu danych - array, tuple - okragle
+# poniewaz nie jest to az tak intuicyjne pisze to tak, by w obu przypadkach
+# julia cos wyplula (jeśli tylko to, co zada uzytkownik ma sens)
+
+# generowanie losowej gry, okreslone przez losowy rozklad i liczbe akcji
+# konwersja tuple w array i ponownie array w tuple, gdyz reshape nie ma
+# metody dla array
+
 game = function(dist, actions)
 
 reshape(rand(dist, prod(actions)*length(actions)),
