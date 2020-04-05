@@ -3,6 +3,7 @@ using Nash
 using Distributions
 using Polyhedra
 using CDDLib
+using LinearAlgebra
 
 @testset "games" begin
 

@@ -158,7 +158,7 @@ function plot_br(br::CDDLib.Polyhedron{T}) where T<:Real
     br_mesh=Polyhedra.Mesh(br)
     vis = MeshCat.Visualizer()
     setobject!(vis, br_mesh)
-    render(vis)
+    IJuliaCell(vis)
 end
 #TODO make stable for 1d, 2d https://github.com/rdeits/MeshCat.jl/blob/master/notebooks/demo.ipynb
 
