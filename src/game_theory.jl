@@ -94,25 +94,23 @@ get_payoff(game,s)
 * `game` - dictionary of players and their payoff matrices
 * `s` - vector of actions probabilities
 * `k` - number of player for which the best reply is returned
-* `eps` - probability of error (if the answer is disturbed)
+* `epsil` - probability of error (if the answer is disturbed)
 * `return_val` - type of returned value ("array" or "chull")
 """
-function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:T}} where T<:Real,
-    k::Int, eps::F=0.0;return_val::String="array") where F<:Real
-    (eps < 0 || eps > 1) && throw(ArgumentError("Probability of error (eps) should be in range 0-1"))
-    # nie wiem czemu zwracanie tego errora nie konczy wykonywania funkcji
-    # w generate_game analogiczny syntax dziala poprawnie
+function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}} where T<:Real,
+    k::Int, epsil::F=0.0 ;return_val::String="array") where F<:Real
+    (epsil < 0 || epsil > 1) && throw(ArgumentError("Probability of error (epsil) should be in range 0-1"))
+    #TODO error should exit function
     action_no = size(game["player1"])[k]
     s_temp=deepcopy(s)
-    payoffs=[] #Vector{<:Real} albo z where nie dziala - no idea why
-    # musi byc any lecz nie jest to optymalne gdyz taki vector wolniej sie przeszukuje
+    payoffs=[] #TODO not Any type
     for i in 1:length(s_temp[k])
         s_temp[k] = zeros(length(s[k]))
         s_temp[k][i] = 1
         push!(payoffs, get_payoff(game, s_temp)["player"*string(k)])
     end
     eyemat = Matrix(I, action_no, action_no)
-    (eps != 0 && rand() < eps) ? pos = rand([false true], action_no) : pos = (payoffs .== maximum(payoffs))
+    (epsil != 0 && rand() < epsil) ? pos = rand([false true], action_no) : pos = (payoffs .== maximum(payoffs))
     all(pos .== 0) ? pos[rand(1:action_no)] = 1 : nothing
     val2ret = eyemat[pos, :]
     if return_val == "chull"
@@ -122,9 +120,9 @@ function best_reply(game::Dict{String,<:Array}, s::Vector{Vector{<:T}} where T<:
     end
 end
 
-a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0.4, 0.6], [1, 0]], 1) #no perturbation
-a2 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[0, 1], [1, 0]], 2, 1/5) #perturbation eps = 1/5
-a3 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull") # no perturbation
+
+a1 = best_reply(generate_game([1 0; 0 1], [1 0; 0 1]), [[1.0, 0.0], [1, 0]], 1, 0.5) # perturbation epsil=0.5
+a2 = best_reply(generate_game(Matrix(I,3,3), Matrix(I,3,3)), [[1/2,1/2,0],[1/3,1/3,1/3]], 1, return_val = "chull") # no perturbation
 
 """
 `is_nash_q` return a dictionary of logical vectors indicating whether
@@ -160,11 +158,11 @@ function plot_br(br::CDDLib.Polyhedron{T}) where T<:Real
     br_mesh=Polyhedra.Mesh(br)
     vis = MeshCat.Visualizer()
     setobject!(vis, br_mesh)
-    IJuliaCell(vis)
+    render(vis)
 end
 #TODO make stable for 1d, 2d https://github.com/rdeits/MeshCat.jl/blob/master/notebooks/demo.ipynb
 
-plot_br(a3)
+plot_br(a2)
 
 """
 `_select_random` internal function for best reply iteration
@@ -209,7 +207,7 @@ function iterate_best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}},
         for i in 1:length(game)
             push!(br, best_reply(game, s_temp, i))
         end
-        s_temp = _random_select(game, s_temp, br)
+        s_temp = _select_random(game, s_temp, br)
         push!(s_history, s_temp)
     end
     println("After ", it_num, " iterations")

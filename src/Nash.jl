@@ -9,7 +9,7 @@ using MeshCat
 
 #functions
 export generate_game, random_2players_game, random_nplayers_game, outer,
-get_payoff, best_reply, is_nash_q, plot_br, iterate_best_reply
+get_payoff, best_reply, is_nash_q, plot_br
 
 export game, getpayoff
 
