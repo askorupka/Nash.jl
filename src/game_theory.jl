@@ -197,15 +197,15 @@ game strategies (action probabilities) history in every iteration
 * `s` - vector of actions probabilities
 * `it_num` - an integer specifying how many iterations should be repeated
 """
-function iterate_best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}},
-    it_num::Int=10)  where T<:Real
+function iterate_best_reply(game::Dict{String,<:Array}, s::Vector{Vector{T}} where T<:Real,
+    epsil::F=0.0, it_num::Int=10)  where F<:Real
     s_temp = deepcopy(s)
     s_history = [] #TODO not Any type
     push!(s_history, s_temp)
     for i in 1:it_num
         br = Array{Bool}[]
         for i in 1:length(game)
-            push!(br, best_reply(game, s_temp, i))
+            push!(br, best_reply(game, s_temp, i, epsil))
         end
         s_temp = _select_random(game, s_temp, br)
         push!(s_history, s_temp)
@@ -218,7 +218,7 @@ end
 
 game = generate_game(Matrix(I, 3, 3), Matrix(I, 3, 3))
 s = [[1/2,1/2, 0], [1/3,1/3,1/3]]
-game_history = iterate_best_reply(game, s, 7)
+game_history = iterate_best_reply(game, s, 1/3, 7) # perturbation epsil=1/3
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie

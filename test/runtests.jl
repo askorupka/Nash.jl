@@ -41,8 +41,8 @@ nashq = is_nash_q(generate_game([1 0 ; 0 1], [1 0; 0 1]), [[1, 0], [1, 0]])
 @test typeof(nashq) == Dict{String,Bool}
 @test nashq["Nash"] == true
 
-game_hist = iterate_best_reply(game, s, 7)
+game_hist = iterate_best_reply(game, s, 0.5, 7)
 @test length(game_hist) == 8
-@test game_hist isa Array{Any,1}
+@test game_hist isa Array{Any,1} #TODO in future not Any type
 @test game_hist[1] isa Array{Array{Float64,1},1}
 end
