@@ -5,7 +5,7 @@ using Polyhedra
 using CDDLib
 using LinearAlgebra
 using Combinatorics
-using Iterators
+using IterTools
 using QuantEcon
 
 @testset "games" begin

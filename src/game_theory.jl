@@ -261,7 +261,7 @@ function game2markov(game::Dict{String,<:Array}, s::Vector{Vector{T}}) where T<:
     trans = Matrix(0I, length(to_states), length(to_states))
     for i in 1:length(to_states)
         indx = _next_state(game, to_states[string(i)], to_states_inv)
-        trans[i, indx] = 1/indx # distributed equally when more than 1 best reply
+        trans[i, indx] = 1/length(indx) # distributed equally when more than 1 best reply
     end
 
     init = Array(1:length(to_states))
@@ -300,7 +300,7 @@ function plot_markov(no_steps::Int64,
     end
 end
 
-plotmarkov(10, mc)
+plot_markov(10, mc)
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie
