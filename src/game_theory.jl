@@ -300,7 +300,7 @@ function plot_markov(no_steps::Int64,
     end
 end
 
-plotmarkov(10, 9, mc)
+plotmarkov(10, mc)
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie
