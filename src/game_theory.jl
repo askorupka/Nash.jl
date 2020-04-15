@@ -6,6 +6,7 @@ using MeshCat
 using Combinatorics
 using IterTools
 using QuantEcon
+using Plots
 
 
 """
@@ -279,10 +280,27 @@ communication_classes(mc)
 period(mc)
 is_aperiodic(mc)
 stationary_distributions(mc)
-# TODO AS wizualizacja sciezek
 # TODO AS wizualizacja grafow
 # TODO AS zaburzenia
 
+"""
+`plot_markov` plots a path of Markov chain simulation of a given time length
+and all initial values
+
+**Input parameters**
+* `no_steps` - scalar of time length (number of iterations)
+* `mc` - Markov chain of a game (game2markov output function)
+"""
+function plot_markov(no_steps::Int64,
+    mc::MarkovChain{Int64,Array{Int64,2},Array{Int64,1}})
+    no_states = stationary_distributions(mc)[1] |> length
+    for i in 1:no_states
+        line = simulate(mc, 10, init = i)
+        i == 1 ? display(plot(1:no_steps, line, label = string(i), lw = 2)) : display(plot!(line, label = string(i), lw = 2))
+    end
+end
+
+plotmarkov(10, 9, mc)
 
 # Mateusz raczej powinienes definiowac funkcje jako function <name>(params)
 # wtedy można dodawać metody a w takim zapisie jak niżej nie
